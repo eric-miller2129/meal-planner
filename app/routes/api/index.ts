@@ -11,17 +11,17 @@ export const loader: LoaderFunction = async () => {
 export const action: ActionFunction = async ({ request }) => {
   switch (request.method) {
     case "POST":
-      const body = await request.json();
-      let data;
+      // const body = await request.json();
+      // let data;
 
-      try {
-        data = await recipeService.getNutrition(body.url);
-      } catch (e: any) {
-        return json({ message: e.message }, 400);
-      }
+      // try {
+      //   data = await recipeService.getNutrition(body.url);
+      // } catch (e: any) {
+      //   return json({ message: e.message }, 400);
+      // }
 
 
-      return json(data, 200);
+      return json({ hello: 'World' }, 200);
     default:
       return new Response(null, {
         status: 405
