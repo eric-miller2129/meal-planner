@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ActionFunction, Form, LoaderFunction, redirect, json, useLoaderData } from 'remix';
+import { ActionFunction, Form, LoaderFunction, redirect, json, useLoaderData, useTransition } from 'remix';
 import { Nutrition } from '~/utils/models/Nutrition';
 import recipeService from '~/utils/recipe.service';
 import { commitSession, getSession } from '~/utils/sessions';
@@ -7,10 +7,20 @@ import { commitSession, getSession } from '~/utils/sessions';
 export const action: ActionFunction = async ({ request }) => {
   const session = await getSession(request.headers.get('Cookie'));
   const body = await request.formData();
+  let nutrition;
 
-  // const { data } = await axios.post(`${ process.env.API_URL }/`, { url: body.get('url') });
-  const nutrition = await recipeService.getNutrition(body.get('url') as string);
-  console.log(Object.entries(nutrition));
+  try {
+    nutrition = await recipeService.getNutrition(body.get('url') as string);
+  } catch (e: any) {
+    session.flash('error', e.message);
+    console.log(e.message);
+    return redirect('/', {
+      headers: {
+        'Set-Cookie': await commitSession(session),
+      },
+    });
+  }
+
   session.flash(
     'data',
     Object.entries(nutrition),
@@ -28,9 +38,10 @@ export const loader: LoaderFunction = async ({ request }) => {
     request.headers.get("Cookie")
   );
   const data = session.get('data') || null;
-
+  const error = session.get('error') || null;
+  console.log(error);
   return json(
-    { data },
+    { data, error },
     {
       headers: {
         // only necessary with cookieSessionStorage
@@ -41,12 +52,14 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export default function Index() {
-  const { data } = useLoaderData();
+  const { data, error } = useLoaderData();
+  const transition = useTransition();
   // console.log(Object.entries(data));
-  console.log(data);
+
   return (
     <>
-      <h1>Nutrition Thing</h1>
+      { error && 'You fucked up bro.' }
+      <h1>Nutrition Thing: {transition.state}</h1>
       <Form method="post">
         <div>
           <label htmlFor="website">Recipe Url:</label>
