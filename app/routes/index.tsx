@@ -10,10 +10,10 @@ export const action: ActionFunction = async ({ request }) => {
   let nutrition;
 
   try {
-    nutrition = await recipeService.getNutrition(body.get('url') as string);
+    nutrition = await recipeService.search(body.get('url') as string);
   } catch (e: any) {
     session.flash('error', e.message);
-    console.log(e.message);
+
     return redirect('/', {
       headers: {
         'Set-Cookie': await commitSession(session),
@@ -39,7 +39,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   );
   const data = session.get('data') || null;
   const error = session.get('error') || null;
-  console.log(error);
+  // console.log(error);
   return json(
     { data, error },
     {
@@ -58,7 +58,7 @@ export default function Index() {
 
   return (
     <>
-      { error && 'You fucked up bro.' }
+      {error && <>{error}</> }
       <h1>Nutrition Thing: {transition.state}</h1>
       <Form method="post">
         <div>

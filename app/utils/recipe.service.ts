@@ -1,40 +1,29 @@
 import axios from 'axios';
 import ValidationError from './errors/ValidationError';
+import Search from './search';
 
 class RecipeService {
-  async getNutrition(url: string) {
+  async search(url: string) {
     const { data } = await axios.get(url);
-    const ldTag = data.match(/<script type="application\/ld\+json"[^>]*>([\s\S]+?)<\/script>/gi)[0];
-    const recipe = ldTag.replace(/(<([^>]+)>)/ig, '');
+
+    const ldTag = data.match(/<script type="application\/ld\+json"[^>]*>([\s\S]+?)<\/script>/gi);
+    if (!ldTag) throw new ValidationError('This is not a recipe');
+
+    const recipe = ldTag[0].replace(/(<([^>]+)>)/ig, '');
 
     if (!recipe) throw new ValidationError('This is not a recipe.');
 
-    const nutrition = this.getValues(recipe);
+    const dfs = new Search();
+    const nutes = dfs.run(JSON.parse(recipe), 'nutrition')
 
-    if (!nutrition) throw new ValidationError('Nutrition information not found.');
+    if (!nutes) throw new ValidationError('There is no nutrition data available.');
 
     return {
-      cals: this.splitValue(nutrition.calories),
-      fat: this.splitValue(nutrition.fatContent),
-      protein: this.splitValue(nutrition.proteinContent),
-      carbs: this.splitValue(nutrition.carbohydrateContent),
-    };
-  }
-
-  private getValues(recipe: string) {
-    const recipeJson = JSON.parse(recipe);
-    const recipeData = recipeJson['@graph'] || recipeJson;
-
-    if (
-      recipeData === undefined ||
-      (typeof recipeData !== 'object' && recipeData.length === 0)
-    ) {
-      return null;
+      cals: this.splitValue(nutes.calories),
+      fat: this.splitValue(nutes.fatContent),
+      protein: this.splitValue(nutes.proteinContent),
+      carbs: this.splitValue(nutes.carbohydrateContent),
     }
-    console.log(recipeData);
-    const recipeGraph = recipeData.find((i: any) => i['@type'] === 'Recipe');
-
-    return recipeGraph.nutrition;
   }
 
   private splitValue(value: string) {
